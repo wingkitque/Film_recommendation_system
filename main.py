@@ -7,25 +7,30 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+
+# ratings_df 含有：userId（用户id）,movieId（电影id）,rating（评分）,timestamp（时间戳）
 ratings_df = pd.read_csv('ml-latest-small/ratings.csv')
 
+# movies_df 含有：movieId（电影id）,title（电影标题）,genres（电影类型）
 movies_df = pd.read_csv('ml-latest-small/movies.csv')
+# 为 movies_df 表数据增加行索引 movieRow （从0开始增加）
 movies_df['movieRow'] = movies_df.index
 
-# 筛选movie_df 中的特征
+# 筛选movie_df 中的特征，去掉 列数据 genres（电影类型）
 movies_df = movies_df[['movieRow', 'movieId', 'title']]
-# 保存过程文件moviesProcessed.csv
+# 保存过程文件moviesProcessed.csv      此时 movies_df 表含有：movieRow（行索引）,movieId（电影id）,title（电影标题）
 movies_df.to_csv('moviesProcessed.csv', index=False, header=True, encoding='utf-8')
 
-# 将ratings_df中的movies替换为行号
+# 将ratings_df中的movies替换为行号，通过 movieId 将 ratings_df 和 movies_df 两表合并成一张大表
 ratings_df = pd.merge(ratings_df, movies_df, on='movieId')
 
 # 筛选ratings_df 中的特征
 ratings_df = ratings_df[['userId', 'movieRow', 'rating']]
-# 保存过程文件ratingsProcessed.csv
+# 保存过程文件ratingsProcessed.csv      此时 ratings_df 表含有：userId（用户id）,movieRow（行索引）,rating（电影评分）
 ratings_df.to_csv('ratingsProcessed.csv', index=False, header=True, encoding='utf-8')
 
 # 创建电影评分矩阵 rating 和评分记录矩阵 recode
+# 获取两表的 行数
 userNo = ratings_df['userId'].max()+1
 movieNo = ratings_df['movieRow'].max()+1
 
@@ -37,6 +42,7 @@ for index, row in ratings_df.iterrows():
     flag += 1
     # print('processed %d, %d left' % (flag, ratings_df_length-flag))
 
+# 评分记录表：有评分的项为'1'，没评分的项为'0'
 record = rating > 0
 record = np.array(record, dtype=int)
 
@@ -51,7 +57,7 @@ def normalizeRatings(rating, record):
         idx = record[i, :] != 0
         rating_mean[i] = np.mean(rating[i, idx])
         rating_norm[i, idx] -= rating_mean[i]
-    # 将计算结果和平均评分返回
+    # 将计算结果和平均评分返回   rating_mean 为多行一列的表，内容为电影平均分；rating_norm 为 一张0和负数的表
     return rating_norm, rating_mean
 
 
